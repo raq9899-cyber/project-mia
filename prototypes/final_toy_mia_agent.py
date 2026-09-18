@@ -1,5 +1,5 @@
 """
-Toy MIA Agent — Version 2
+Toy MIA Agent
 
 Purpose:
   Evolve the original Step 1 prototype into a slightly richer Sprint 1 workflow
