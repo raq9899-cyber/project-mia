@@ -26,7 +26,7 @@ Setup:
     export OPENAI_API_KEY="your-key-here"
 
 Run:
-    python toy_mia_agent_v2.py
+    python prototypes/final_toy_mia_agent.py
 """
 
 import json
