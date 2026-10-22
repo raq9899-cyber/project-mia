@@ -7,6 +7,12 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+if "draft_response" not in st.session_state:
+    st.session_state.draft_response = ""
+
+if "review_status" not in st.session_state:
+    st.session_state.review_status = "Not reviewed"
+
 st.set_page_config(
     page_title="MIA - Investor Relations Assistant",
     page_icon="💼",
@@ -65,12 +71,35 @@ if st.button("Generate Response", type="primary"):
                         st.code(result.stderr)
 
                     else:
-                        st.subheader("MIA Draft Response")
-                        st.text(result.stdout)
-                        st.warning(
-                            "NOT APPROVED — NOT SENT. "
-                            "Human review is required."
-                        )
+                        response_text = result.stdout
+
+                        if "MIA — INVESTOR RELATIONS DRAFT" in response_text:
+                            response_text = response_text.split(
+                                "MIA — INVESTOR RELATIONS DRAFT", 1
+                            )[1].strip()
+                            if "Draft response:" in response_text:
+                                response_text = response_text.split(
+                                    "Draft response:", 1
+                                )[1].strip()
+                            if "[SOURCE 1]" in response_text:
+                                response_text = response_text.split(
+                                    "[SOURCE 1]", 1
+                                )[0].strip()
+
+                            if "STATUS: NOT APPROVED" in response_text:
+                                response_text = response_text.split(
+                                    "STATUS: NOT APPROVED", 1
+                                )[0].strip()
+                            st.session_state.draft_response = response_text
+                            st.session_state.reviewed_response = response_text
+                            st.session_state.review_status = "Pending review"
+
+                            st.subheader("MIA Draft Response")
+                            st.text(st.session_state.draft_response)
+                            st.warning(
+                                "NOT APPROVED — NOT SENT. "
+                                "Human review is required."
+                            )
 
                 except subprocess.TimeoutExpired:
                     st.error(
@@ -81,6 +110,39 @@ if st.button("Generate Response", type="primary"):
                     st.error(
                         "An unexpected error occurred."
                     )
+if st.session_state.draft_response:
+    st.subheader("Human Review")
+
+    st.text_area(
+        "Edit MIA's Response",
+        height=300,
+        key="reviewed_response"
+    )
+
+    
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("Approve"):
+            if st.session_state.reviewed_response.strip():
+                st.session_state.review_status = "Approved"
+                st.success("Response approved locally. Not sent.")
+            else:
+                st.error("Cannot approve an empty response.")
+
+    with col2:
+        if st.button("Request Revision"):
+            st.session_state.review_status = "Needs revision"
+            st.warning("Response returned for revision.")
+
+    with col3:
+        if st.button("Reject"):
+            st.session_state.review_status = "Rejected"
+            st.error("Response rejected.")
+
+    st.info(
+        f"Review Status: {st.session_state.review_status}"
+    )
 
 st.divider()
 st.caption(
